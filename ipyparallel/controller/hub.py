@@ -1461,9 +1461,17 @@ class Hub(SessionFactory):
         if self.distributed_scheduler is None:
             kwargs = msg['content'].get('scheduler_args', {})
             self.log.info("Becoming dask.distributed scheduler: %s", kwargs)
-            from distributed import Scheduler
             port = msg['content'].get('port', 0)
             kwargs['loop'] = self.loop
+            kwargs['services'] = kwargs.get('services', {})
+
+            try:
+                from distributed.bokeh.scheduler import BokehScheduler
+                kwargs['services'][('bokeh', bokeh_port)] = 
+            except ImportError:
+                pass
+
+            from distributed import Scheduler
             self.distributed_scheduler = scheduler = Scheduler(**kwargs)
             f = scheduler.start(port)
         content = {
